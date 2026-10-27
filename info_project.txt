@@ -1,0 +1,13 @@
+तुमच्या server.js मध्ये आतापर्यंत आपण चर्चा केलेल्या code नुसार मुख्य 9 functions आहेत.
+No.	Function name	काम
+
+1	sanitize...()	                Folder/file name मधील अनावश्यक characters काढणे
+2	getCountryCode()	        Country चा code मिळवणे
+3	normalizePdfUrl()	        PDF URL योग्य format मध्ये आणणे
+4	downloadPDF()	                PDF download करणे
+5	getMarketoContent()	        Marketo page मधून title आणि abstract घेणे
+6	replaceAbstractContent()	HTML मध्ये abstract बदलणे
+7	injectMarketoIntoHtml()    	HTML मध्ये title आणि abstract update करणे
+8	encodeEmailSubject()	        Email subject encode करणे
+9	injectSubjectIntoPhp()	        PHP file मधील email subject update करणे
+10	createAssetTemplate()	        Template files तयार करणे आणि update करणे

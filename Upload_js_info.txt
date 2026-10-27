@@ -1,0 +1,12 @@
+Code madhye ekun kiti functions aahet?
+No.	Function 	Kay kaam karto?
+1	sanitizeName()   	Name madhle unwanted characters remove karto
+2	joinRemote()    	FTP path che parts join karto
+3	isDirectory()	       Item folder aahe ka check karto
+4	isFile()	       Item file aahe ka check karto
+5	getModifiedTime()	Folder chi modified time milavto
+6	listDirectories()	FTP madhil subfolders chi list milavto
+7	findLatestAssetFolder()	Required files aslela latest asset folder shodhto
+8	downloadRequiredFiles()	FTP varun required files download karto
+9	processLanguage()	Country, language ani locale process karto
+10	main()	Sampurna downloader process control karto

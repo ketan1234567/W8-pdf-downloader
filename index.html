@@ -799,7 +799,8 @@ countrySelect.onchange = () => {
 };
 
 // LANGUAGE CHANGE: FILTER BY COUNTRY + LANGUAGE
-languageSelect.onchange = () => {
+
+languageSelect.onchange = async () => {
     const selectedCountry = countrySelect.value;
     const selectedLanguage = languageSelect.value;
 
@@ -812,6 +813,7 @@ languageSelect.onchange = () => {
 
     const filteredRows = rows.filter((row, index) => {
         if (index === 0) return false;
+
         const country = String(row[1] || "").trim();
         const language = String(row[2] || "").trim();
 
@@ -820,28 +822,66 @@ languageSelect.onchange = () => {
     });
 
     if (filteredRows.length === 0) {
-        assetInfo.innerText = `No assets found for ${selectedCountry} / ${selectedLanguage}.`;
+        assetInfo.innerText =
+            `No assets found for ${selectedCountry} / ${selectedLanguage}.`;
         return;
     }
 
-    selectedAssets = filteredRows.map(row => ({
-        assetTitle: String(row[0] || "").trim(),
-        country: String(row[1] || "").trim(),
-        language: String(row[2] || "").trim(),
-        pdf: String(row[3] || "").trim(),
-        marketoUrl: String(row[4] || "").trim()
-    }));
-console.log("Filtered rows:", filteredRows);
-console.log("First row:", filteredRows[0]);
-console.log("Marketo URL:", filteredRows[0]?.[4]);
-console.log("Selected assets:", selectedAssets);
+selectedAssets = filteredRows.map(row => ({
+    assetTitle: String(row[0] || "").trim(),
+    country: String(row[1] || "").trim(),
+    language: String(row[2] || "").trim(),
+    pdf: String(row[3] || "").trim(),
+    marketoUrl: String(row[4] || "").trim(),
 
+    lob: String(row[5] || "").trim(),
+    hub: String(row[6] || "").trim()
+}));
 
+    console.log("Filtered rows:", filteredRows);
+    console.log("First row:", filteredRows[0]);
+    console.log("Marketo URL:", filteredRows[0]?.[4]);
+    console.log("Selected assets:", selectedAssets);
 
+    assetInfo.innerText =
+        `Found ${selectedAssets.length} asset(s) for ${selectedCountry} / ${selectedLanguage}`;
 
-    assetInfo.innerText = `Found ${selectedAssets.length} asset(s) for ${selectedCountry} / ${selectedLanguage}`;
-    generateBtn.disabled = false;
+    // Automatically create the template folder after language selection
+    try {
+        const response = await fetch("/create-template-folder", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                country: selectedCountry,
+                language: selectedLanguage
+            })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(data.message || "Folder creation failed");
+        }
+
+        console.log("Template folder ready:", data.folderPath);
+
+        success.innerText =
+            `Folder created: templates/${selectedCountry}/${selectedLanguage}/1/`;
+
+        error.innerText = "";
+        generateBtn.disabled = false;
+
+    } catch (err) {
+        console.error("Folder creation error:", err);
+        error.innerText = `Folder creation failed: ${err.message}`;
+        generateBtn.disabled = true;
+        return;
+    }
 };
+
+
 
 // GENERATE ASSETS
 
