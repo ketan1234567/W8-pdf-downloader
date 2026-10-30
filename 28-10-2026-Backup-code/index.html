@@ -1,0 +1,1137 @@
+
+
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <title>📦 Asset Generator</title>
+
+    <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+
+    <style>
+
+        body {
+
+            font-family: Arial;
+
+            background: #f5f7fb;
+
+            display: flex;
+
+            justify-content: center;
+
+            align-items: center;
+
+            min-height: 100vh;
+
+            margin: 0;
+
+        }
+
+        .box {
+
+            background: #fff;
+
+            padding: 30px;
+
+            border-radius: 12px;
+
+            width: 540px;
+
+            text-align: center;
+
+            box-shadow:
+
+                0 8px 30px rgba(0,0,0,0.1);
+
+        }
+
+        h2 {
+
+            margin-bottom: 10px;
+
+            color: #0078d4;
+
+        }
+
+        .drop {
+
+            border: 2px dashed #0078d4;
+
+            padding: 30px;
+
+            border-radius: 10px;
+
+            cursor: pointer;
+
+            margin-top: 20px;
+
+        }
+
+        .drop:hover {
+
+            background: #eef6fd;
+
+        }
+
+        input {
+
+            display: none;
+
+        }
+
+        select {
+
+            width: 100%;
+
+            padding: 12px;
+
+            margin-top: 15px;
+
+            border: 1px solid #ccc;
+
+            border-radius: 6px;
+
+            font-size: 14px;
+
+        }
+
+        button {
+
+            width: 100%;
+
+            padding: 13px;
+
+            margin-top: 15px;
+
+            border: none;
+
+            border-radius: 6px;
+
+            background: #0078d4;
+
+            color: white;
+
+            font-size: 15px;
+
+            cursor: pointer;
+
+        }
+
+        button:disabled {
+
+            background: #aaa;
+
+            cursor: not-allowed;
+
+        }
+
+        .progress {
+
+            margin-top: 20px;
+
+            display: none;
+
+        }
+
+        .bar {
+
+            height: 6px;
+
+            background: #ddd;
+
+            border-radius: 5px;
+
+            overflow: hidden;
+
+        }
+
+        .fill {
+
+            height: 100%;
+
+            width: 0%;
+
+            background: #0078d4;
+
+            transition: width 0.2s;
+
+        }
+
+        .msg {
+
+            margin-top: 10px;
+
+            font-size: 14px;
+
+        }
+
+        .error {
+
+            color: red;
+
+        }
+
+        .success {
+
+            color: green;
+
+        }
+
+        .info {
+
+            color: #0078d4;
+
+        }
+
+        #languageCount {
+
+            margin-top: 8px;
+
+            font-size: 13px;
+
+            color: #666;
+
+            text-align: left;
+
+        }
+
+        #assetInfo {
+
+            margin-top: 12px;
+
+            font-size: 14px;
+
+            color: #333;
+
+            text-align: left;
+
+        }
+
+        #result {
+
+            margin-top: 15px;
+
+            font-size: 14px;
+
+            text-align: left;
+
+            white-space: pre-line;
+
+        }
+
+    </style>
+
+</head>
+
+<body>
+
+<div class="box">
+
+    <h2>📦 Asset Generator</h2>
+
+    <p>Upload Excel file</p>
+
+    <!-- ========================= -->
+
+    <!-- Excel Upload -->
+
+    <!-- ========================= -->
+
+    <div
+
+        class="drop"
+
+        id="drop"
+
+    >
+
+        Click or Drag Excel File
+
+        <input
+
+            type="file"
+
+            id="file"
+
+            accept=".xlsx,.xls"
+
+        >
+
+    </div>
+
+    <div id="filename"></div>
+
+    <!-- ========================= -->
+    <!-- Country Selection -->
+    <!-- ========================= -->
+
+    <select id="countrySelect" disabled>
+        <option value="">Select Country</option>
+    </select>
+
+    <!-- ========================= -->
+
+    <!-- Language Selection -->
+
+    <!-- ========================= -->
+
+    <select
+
+        id="languageSelect"
+
+        disabled
+
+    >
+
+        <option value="">
+
+            Select Language
+
+        </option>
+
+    </select>
+
+    <div id="languageCount"></div>
+
+    <!-- ========================= -->
+
+    <!-- Asset Information -->
+
+    <!-- ========================= -->
+
+    <div id="assetInfo"></div>
+
+    <!-- ========================= -->
+
+    <!-- Generate Button -->
+
+    <!-- ========================= -->
+
+    <button
+
+        id="generateBtn"
+
+        disabled
+
+    >
+
+        Generate Assets
+
+    </button>
+
+    <!-- ========================= -->
+
+    <!-- Progress -->
+
+    <!-- ========================= -->
+
+    <div
+
+        class="progress"
+
+        id="progress"
+
+    >
+
+        <div class="bar">
+
+            <div
+
+                class="fill"
+
+                id="fill"
+
+            ></div>
+
+        </div>
+
+        <div
+
+            class="msg"
+
+            id="msg"
+
+        >
+
+            Processing...
+
+        </div>
+
+    </div>
+
+    <!-- ========================= -->
+
+    <!-- Messages -->
+
+    <!-- ========================= -->
+
+    <div
+
+        class="msg error"
+
+        id="error"
+
+    ></div>
+
+    <div
+
+        class="msg success"
+
+        id="success"
+
+    ></div>
+
+    <div
+
+        class="msg info"
+
+        id="result"
+
+    ></div>
+
+</div>
+
+<script>
+
+// =====================================================
+
+// ELEMENTS
+
+// =====================================================
+
+const drop =
+
+    document.getElementById("drop");
+
+const fileInput =
+
+    document.getElementById("file");
+
+const filename =
+
+    document.getElementById("filename");
+
+const countrySelect = document.getElementById("countrySelect");
+
+const languageSelect = document.getElementById("languageSelect");
+
+const languageCount =
+
+    document.getElementById("languageCount");
+
+const generateBtn =
+
+    document.getElementById("generateBtn");
+
+const assetInfo =
+
+    document.getElementById("assetInfo");
+
+const progress =
+
+    document.getElementById("progress");
+
+const fill =
+
+    document.getElementById("fill");
+
+const msg =
+
+    document.getElementById("msg");
+
+const error =
+
+    document.getElementById("error");
+
+const success =
+
+    document.getElementById("success");
+
+const result =
+
+    document.getElementById("result");
+
+// =====================================================
+
+// GLOBAL EXCEL DATA
+
+// =====================================================
+
+let rows = [];
+
+let selectedAssets = [];
+
+// =====================================================
+
+// CLICK UPLOAD
+
+// =====================================================
+
+drop.onclick = () => {
+
+    fileInput.click();
+
+};
+
+// =====================================================
+
+// FILE SELECT
+
+// =====================================================
+
+fileInput.onchange = () => {
+
+    if (fileInput.files.length) {
+
+        readExcel(
+
+            fileInput.files[0]
+
+        );
+
+    }
+
+};
+
+// =====================================================
+
+// DRAG OVER
+
+// =====================================================
+
+drop.ondragover = (e) => {
+
+    e.preventDefault();
+
+};
+
+// =====================================================
+
+// DROP FILE
+
+// =====================================================
+
+drop.ondrop = (e) => {
+
+    e.preventDefault();
+
+    const file =
+
+        e.dataTransfer.files[0];
+
+    if (file) {
+
+        readExcel(file);
+
+    }
+
+};
+
+// =====================================================
+
+// READ EXCEL
+
+// =====================================================
+
+async function readExcel(file) {
+
+    try {
+
+        // Reset messages
+
+        error.innerText = "";
+
+        success.innerText = "";
+
+        result.innerText = "";
+
+        assetInfo.innerText = "";
+
+        // Check extension
+
+        const ext =
+
+            file.name
+
+                .split(".")
+
+                .pop()
+
+                .toLowerCase();
+
+        if (
+
+            !["xlsx", "xls"].includes(ext)
+
+        ) {
+
+            error.innerText =
+
+                "Upload Excel file only";
+
+            return;
+
+        }
+
+        filename.innerText =
+
+            file.name;
+
+        // Read file
+
+        const buffer =
+
+            await file.arrayBuffer();
+
+        const workbook =
+
+            XLSX.read(
+
+                buffer,
+
+                {
+
+                    type: "array"
+
+                }
+
+            );
+
+        const sheetName =
+
+            workbook.SheetNames[0];
+
+        const worksheet =
+
+            workbook.Sheets[
+
+                sheetName
+
+            ];
+
+        rows =
+
+            XLSX.utils.sheet_to_json(
+
+                worksheet,
+
+                {
+
+                    header: 1,
+
+                    defval: ""
+
+                }
+
+            );
+
+        console.log(
+
+            "Excel rows:",
+
+            rows
+
+        );
+
+        // =================================================
+
+        // CHECK DATA
+
+        // =================================================
+
+        if (
+
+            !rows ||
+
+            rows.length <= 1
+
+        ) {
+
+            error.innerText =
+
+                "No data found in Excel.";
+
+            return;
+
+        }
+
+        // =================================================
+
+        // FIRST ROW DEBUG
+
+        // =================================================
+
+        console.log(
+
+            "FIRST DATA ROW:",
+
+            rows[1]
+
+        );
+
+        console.log(
+
+            "Column A - Asset:",
+
+            rows[1][0]
+
+        );
+
+        console.log(
+
+            "Column B - Country:",
+
+            rows[1][1]
+
+        );
+
+        console.log(
+
+            "Column C - Language:",
+
+            rows[1][2]
+
+        );
+
+        console.log(
+
+            "Column D - PDF:",
+
+            rows[1][3]
+
+        );
+
+        // =================================================
+
+        // GET COUNTRIES FROM COLUMN B
+        const countries = new Set();
+
+        for (let i = 1; i < rows.length; i++) {
+            const country = String(rows[i][1] || "").trim();
+            if (country) countries.add(country);
+        }
+
+        countrySelect.innerHTML = '<option value="">Select Country</option>';
+
+        [...countries].sort((a, b) => a.localeCompare(b)).forEach(country => {
+            const option = document.createElement("option");
+            option.value = country;
+            option.textContent = country;
+            countrySelect.appendChild(option);
+        });
+
+        countrySelect.disabled = false;
+        languageSelect.innerHTML = '<option value="">Select Language</option>';
+        languageSelect.disabled = true;
+        languageCount.innerText = "";
+        generateBtn.disabled = true;
+
+        success.innerText =
+
+            "Excel loaded successfully. Please select a country.";
+
+    } catch (err) {
+
+        console.error(
+
+            "Excel error:",
+
+            err
+
+        );
+
+        error.innerText =
+
+            "Unable to read Excel file.";
+
+    }
+
+}
+
+// =====================================================
+
+// COUNTRY CHANGE: LOAD LANGUAGES FOR SELECTED COUNTRY
+countrySelect.onchange = () => {
+    const selectedCountry = countrySelect.value;
+
+    languageSelect.innerHTML = '<option value="">Select Language</option>';
+    languageSelect.disabled = true;
+    generateBtn.disabled = true;
+    languageCount.innerText = "";
+    assetInfo.innerText = "";
+    result.innerText = "";
+    selectedAssets = [];
+
+    if (!selectedCountry) return;
+
+    const languages = new Set();
+
+    for (let i = 1; i < rows.length; i++) {
+        const country = String(rows[i][1] || "").trim();
+        const language = String(rows[i][2] || "").trim();
+
+        if (country.toLowerCase() === selectedCountry.toLowerCase() && language) {
+            languages.add(language);
+        }
+    }
+
+    [...languages].sort((a, b) => a.localeCompare(b)).forEach(language => {
+        const option = document.createElement("option");
+        option.value = language;
+        option.textContent = language;
+        languageSelect.appendChild(option);
+    });
+
+    languageSelect.disabled = languages.size === 0;
+    languageCount.innerText = `${languages.size} language(s) found for ${selectedCountry}`;
+
+    if (languages.size === 0) {
+        error.innerText = `No languages found for ${selectedCountry}.`;
+    } else {
+        error.innerText = "";
+        success.innerText = `Country selected: ${selectedCountry}. Please select a language.`;
+    }
+};
+
+// LANGUAGE CHANGE: FILTER BY COUNTRY + LANGUAGE
+
+languageSelect.onchange = async () => {
+    const selectedCountry = countrySelect.value;
+    const selectedLanguage = languageSelect.value;
+
+    generateBtn.disabled = true;
+    assetInfo.innerText = "";
+    result.innerText = "";
+    selectedAssets = [];
+
+    if (!selectedCountry || !selectedLanguage) return;
+
+    const filteredRows = rows.filter((row, index) => {
+        if (index === 0) return false;
+
+        const country = String(row[1] || "").trim();
+        const language = String(row[2] || "").trim();
+
+        return country.toLowerCase() === selectedCountry.toLowerCase() &&
+               language.toLowerCase() === selectedLanguage.toLowerCase();
+    });
+
+    if (filteredRows.length === 0) {
+        assetInfo.innerText =
+            `No assets found for ${selectedCountry} / ${selectedLanguage}.`;
+        return;
+    }
+
+selectedAssets = filteredRows.map(row => ({
+    assetTitle: String(row[0] || "").trim(),
+    country: String(row[1] || "").trim(),
+    language: String(row[2] || "").trim(),
+    pdf: String(row[3] || "").trim(),
+    marketoUrl: String(row[4] || "").trim(),
+
+    lob: String(row[5] || "").trim(),
+    hub: String(row[6] || "").trim()
+}));
+
+    console.log("Filtered rows:", filteredRows);
+    console.log("First row:", filteredRows[0]);
+    console.log("Marketo URL:", filteredRows[0]?.[4]);
+    console.log("Selected assets:", selectedAssets);
+
+    assetInfo.innerText =
+        `Found ${selectedAssets.length} asset(s) for ${selectedCountry} / ${selectedLanguage}`;
+
+    // Automatically create the template folder after language selection
+    try {
+        const response = await fetch("/create-template-folder", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                country: selectedCountry,
+                language: selectedLanguage
+            })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(data.message || "Folder creation failed");
+        }
+
+        console.log("Template folder ready:", data.folderPath);
+
+        success.innerText =
+            `Folder created: templates/${selectedCountry}/${selectedLanguage}/1/`;
+
+        error.innerText = "";
+        generateBtn.disabled = false;
+
+    } catch (err) {
+        console.error("Folder creation error:", err);
+        error.innerText = `Folder creation failed: ${err.message}`;
+        generateBtn.disabled = true;
+        return;
+    }
+};
+
+
+
+// GENERATE ASSETS
+
+// =====================================================
+
+generateBtn.onclick =
+
+    async () => {
+
+        const selectedCountry = countrySelect.value;
+        const selectedLanguage = languageSelect.value;
+
+        if (!selectedCountry || !selectedLanguage) {
+            error.innerText = "Please select a country and language."; 
+
+            return;
+
+        }
+
+        if (
+
+            selectedAssets.length === 0
+
+        ) {
+
+            error.innerText =
+
+                "No assets found.";
+
+            return;
+
+        }
+
+        // Reset
+
+        error.innerText =
+
+            "";
+
+        success.innerText =
+
+            "";
+
+        result.innerText =
+
+            "";
+
+        progress.style.display =
+
+            "block";
+
+        fill.style.width =
+
+            "10%";
+
+        msg.innerText =
+
+            "Preparing assets...";
+
+        generateBtn.disabled =
+
+            true;
+
+        console.log(
+
+            "Sending assets:",
+
+            selectedAssets
+
+        );
+
+        try {
+
+            // =================================================
+
+            // SEND TO NODE SERVER
+
+            // =================================================
+
+            const response =
+
+                await fetch(
+
+                    "/generate",
+
+                    {
+
+                        method: "POST",
+
+                        headers: {
+
+                            "Content-Type":
+
+                                "application/json"
+
+                        },
+
+                        body:
+
+                            JSON.stringify({
+                                country: selectedCountry,
+                                language: selectedLanguage,
+                                assets: selectedAssets
+                            })
+
+                    }
+
+                );
+
+            fill.style.width =
+
+                "50%";
+
+            msg.innerText =
+
+                "Generating assets...";
+
+            // =================================================
+
+            // RESPONSE
+
+            // =================================================
+
+            const text =
+
+                await response.text();
+
+            console.log(
+
+                "Server response:",
+
+                text
+
+            );
+
+            if (!response.ok) {
+
+                throw new Error(
+
+                    text ||
+
+                    "Server error"
+
+                );
+
+            }
+
+            let data;
+
+            try {
+
+                data =
+
+                    JSON.parse(text);
+
+            } catch {
+
+                data = {
+
+                    success: true,
+
+                    message: text
+
+                };
+
+            }
+
+            fill.style.width =
+
+                "100%";
+
+            msg.innerText =
+
+                "Done";
+
+            success.innerText =
+
+                "✅ Assets generated successfully";
+
+           result.innerText = `Country: ${selectedCountry}
+Language: ${selectedLanguage}
+Assets: ${data.successCount ?? selectedAssets.length}
+${data.message || "Asset generation completed"}`;
+
+const generatedAssets = (data.results || []).filter(
+    (asset) => asset.status === "success" && asset.assetURL
+);
+
+if (generatedAssets.length > 0) {
+    const heading = document.createElement("h4");
+    heading.textContent = "Generated Asset URLs";
+    heading.style.marginBottom = "8px";
+    result.appendChild(heading);
+
+generatedAssets.forEach((asset) => {
+    const item = document.createElement("div");
+    item.style.marginBottom = "8px";
+    item.style.overflowWrap = "anywhere";
+
+    const link = document.createElement("a");
+    link.href = asset.assetURL.endsWith("/")
+        ? asset.assetURL
+        : `${asset.assetURL}/`;
+
+    link.textContent = link.href;
+    link.target = "_blank";
+    link.rel = "noopener noreferrer";
+    link.style.color = "#0078d4";
+
+    item.appendChild(link);
+    result.appendChild(item);
+});
+}
+
+        } catch (err) {
+
+            console.error(
+
+                "Generate error:",
+
+                err
+
+            );
+
+            fill.style.width =
+
+                "0%";
+
+            msg.innerText =
+
+                "Failed";
+
+            error.innerText =
+
+                "❌ Generation failed: " +
+
+                err.message;
+
+        } finally {
+
+            generateBtn.disabled =
+
+                false;
+
+        }
+
+    };
+
+</script>
+
+</body>
+
+</html>

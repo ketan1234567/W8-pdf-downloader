@@ -538,220 +538,148 @@ drop.ondrop = (e) => {
 
 // =====================================================
 
+
 async function readExcel(file) {
-
     try {
-
-        // Reset messages
-
         error.innerText = "";
-
         success.innerText = "";
-
         result.innerText = "";
-
         assetInfo.innerText = "";
 
-        // Check extension
-
-        const ext =
-
-            file.name
-
-                .split(".")
-
-                .pop()
-
-                .toLowerCase();
-
-        if (
-
-            !["xlsx", "xls"].includes(ext)
-
-        ) {
-
-            error.innerText =
-
-                "Upload Excel file only";
-
-            return;
-
-        }
-
-        filename.innerText =
-
-            file.name;
-
-        // Read file
-
-        const buffer =
-
-            await file.arrayBuffer();
-
-        const workbook =
-
-            XLSX.read(
-
-                buffer,
-
-                {
-
-                    type: "array"
-
-                }
-
-            );
-
-        const sheetName =
-
-            workbook.SheetNames[0];
-
-        const worksheet =
-
-            workbook.Sheets[
-
-                sheetName
-
-            ];
-
-        rows =
-
-            XLSX.utils.sheet_to_json(
-
-                worksheet,
-
-                {
-
-                    header: 1,
-
-                    defval: ""
-
-                }
-
-            );
-
-        console.log(
-
-            "Excel rows:",
-
-            rows
-
-        );
-
-        // =================================================
-
-        // CHECK DATA
-
-        // =================================================
-
-        if (
-
-            !rows ||
-
-            rows.length <= 1
-
-        ) {
-
-            error.innerText =
-
-                "No data found in Excel.";
-
-            return;
-
-        }
-
-        // =================================================
-
-        // FIRST ROW DEBUG
-
-        // =================================================
-
-        console.log(
-
-            "FIRST DATA ROW:",
-
-            rows[1]
-
-        );
-
-        console.log(
-
-            "Column A - Asset:",
-
-            rows[1][0]
-
-        );
-
-        console.log(
-
-            "Column B - Country:",
-
-            rows[1][1]
-
-        );
-
-        console.log(
-
-            "Column C - Language:",
-
-            rows[1][2]
-
-        );
-
-        console.log(
-
-            "Column D - PDF:",
-
-            rows[1][3]
-
-        );
-
-        // =================================================
-
-        // GET COUNTRIES FROM COLUMN B
-        const countries = new Set();
-
-        for (let i = 1; i < rows.length; i++) {
-            const country = String(rows[i][1] || "").trim();
-            if (country) countries.add(country);
-        }
-
-        countrySelect.innerHTML = '<option value="">Select Country</option>';
-
-        [...countries].sort((a, b) => a.localeCompare(b)).forEach(country => {
-            const option = document.createElement("option");
-            option.value = country;
-            option.textContent = country;
-            countrySelect.appendChild(option);
-        });
-
-        countrySelect.disabled = false;
-        languageSelect.innerHTML = '<option value="">Select Language</option>';
-        languageSelect.disabled = true;
-        languageCount.innerText = "";
         generateBtn.disabled = true;
 
+        // 1. Validate Excel file
+        const ext = file.name.split(".").pop().toLowerCase();
+
+        if (!["xlsx", "xls"].includes(ext)) {
+            error.innerText = "Upload Excel file only";
+            return;
+        }
+
+        filename.innerText = file.name;
+
+        // 2. Read Excel
+        const buffer = await file.arrayBuffer();
+
+        const workbook = XLSX.read(buffer, {
+            type: "array"
+        });
+
+        const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+
+        const rows = XLSX.utils.sheet_to_json(worksheet, {
+            header: 1,
+            defval: ""
+        });
+
+        console.log("Excel rows:", rows);
+
+        // 3. Validate rows
+        if (!rows || rows.length <= 1) {
+            error.innerText = "No data found in Excel.";
+            return;
+        }
+
+        // 4. Convert all Excel rows into assets
+        const assets = [];
+
+        for (let i = 1; i < rows.length; i++) {
+            const row = rows[i];
+
+            const asset = {
+                assetTitle: String(row[0] || "").trim(),
+                country: String(row[1] || "").trim(),
+                language: String(row[2] || "").trim(),
+                pdf: String(row[3] || "").trim(),
+                marketoUrl: String(row[4] || "").trim(),
+                lob: String(row[5] || "").trim(),
+                hub: String(row[6] || "").trim()
+            };
+
+            // Skip completely empty rows
+            if (
+                !asset.assetTitle &&
+                !asset.country &&
+                !asset.language
+            ) {
+                continue;
+            }
+
+            // Validate required fields
+            if (
+                !asset.assetTitle ||
+                !asset.country ||
+                !asset.language
+            ) {
+                console.warn("Skipping invalid Excel row:", i + 1, row);
+                continue;
+            }
+
+            assets.push(asset);
+        }
+
+        if (assets.length === 0) {
+            error.innerText =
+                "No valid asset rows found. Check columns A, B and C.";
+            return;
+        }
+
+        console.log("Assets to generate:", assets);
+
+        // 5. Start automatic generation for ALL assets
         success.innerText =
+            `Excel loaded. Generating ${assets.length} assets...`;
 
-            "Excel loaded successfully. Please select a country.";
+        assetInfo.innerText =
+            "Please wait. Do not upload the same file again.";
 
-    } catch (err) {
+        const response = await fetch("/generate", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                assets: assets
+            })
+        });
 
-        console.error(
+        const data = await response.json();
 
-            "Excel error:",
+        if (!response.ok || !data.success) {
+            throw new Error(
+                data.message || "Asset generation failed."
+            );
+        }
 
-            err
+        // 6. Show results
+        success.innerText =
+            `Generation completed! Total: ${data.total}, ` +
+            `Successful: ${data.successCount}, ` +
+            `Failed: ${data.failedCount}`;
 
+        result.innerText = JSON.stringify(
+            data.results || [],
+            null,
+            2
         );
 
+        if (data.outputExcelPath) {
+            assetInfo.innerText =
+                `Output Excel: ${data.outputExcelPath}`;
+        }
+
+        console.log("Generation response:", data);
+
+    } catch (err) {
+        console.error("Excel/asset generation error:", err);
+
         error.innerText =
-
-            "Unable to read Excel file.";
-
+            err.message || "Unable to process Excel file.";
+    } finally {
+        generateBtn.disabled = true;
     }
-
 }
+
 
 // =====================================================
 

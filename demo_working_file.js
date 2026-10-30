@@ -108,6 +108,15 @@ function normalizePdfUrl(url) {
     return finalUrl;
 }
 
+function normalizeCountry(country) {
+    const countryMap = {
+        "United Arab Emirates": "UAE",
+        "Cote d Ivoire": "Cote-dIvoire"
+    };
+
+    return countryMap[country?.trim()] || country?.trim();
+}
+
 
 
 
@@ -214,6 +223,8 @@ async function getMarketoContent(marketoUrl) {
     const abstract =
         $("#mainBodyCopy > div").first().html()?.trim() || "";
 
+        const formHeading = $("#formHeading").text().trim();
+
     if (!title) {
         throw new Error(`Title (H1) not found: ${marketoUrl}`);
     }
@@ -230,9 +241,10 @@ async function getMarketoContent(marketoUrl) {
         "✅ Abstract extracted:",
         abstract.replace(/<[^>]*>/g, " ").trim().slice(0, 200)
     );
+        console.log("✅ Form Heading extracted:", formHeading || "Not found");
     console.log("📏 Abstract length:", abstract.length, "characters");
 
-    return { title, abstract };
+    return { title, abstract,formHeading  };
 }
 
 
@@ -275,13 +287,14 @@ function replaceAbstractContent($, marketoAbstract) {
 
 // UPDATE HTML TEMPLATE WITH MARKETO CONTENT
 
-function injectMarketoIntoHtml(content, marketoTitle, marketoAbstract) {
+function injectMarketoIntoHtml(content, marketoTitle, marketoAbstract,formHeading) {
     console.log("\n📝 INJECTING MARKETO CONTENT");
     console.log("🎯 New title:", marketoTitle);
     console.log(
         "📄 Abstract received:",
         marketoAbstract ? "YES" : "NO"
     );
+    console.log("📝 Form Heading received:", formHeading || "NO");
 
     const $ = cheerio.load(content, {
         decodeEntities: false
@@ -308,6 +321,55 @@ function injectMarketoIntoHtml(content, marketoTitle, marketoAbstract) {
     if (!abstractUpdated) {
         console.log("⚠️ Abstract was not updated");
     }
+
+
+    // 4. Update CTA based on Marketo Form Heading
+if (formHeading) {
+    console.log("🎯 Updating CTA based on Form Heading");
+
+    const heading = formHeading.toLowerCase();
+
+    let ctaText = "Request the Content Now";
+
+    if (heading.includes("demo")) {
+        ctaText = "Request the Demo Now";
+    } else if (heading.includes("guide")) {
+        ctaText = "Request the Guide Now";
+    } else if (heading.includes("infographic")) {
+        ctaText = "Request the Infographic Now";
+    } else if (heading.includes("report")) {
+        ctaText = "Request the Report Now";
+    } else if (heading.includes("resource")) {
+        ctaText = "Request the Resource Now";
+    } else if (heading.includes("video")) {
+        ctaText = "Request the Video Now";
+    } else if (heading.includes("webinar")) {
+        ctaText = "Request the Webinar Now";
+    } else if (heading.includes("white paper")) {
+        ctaText = "Request the White Paper Now";
+    } else if (heading.includes("playbook")) {
+        ctaText = "Request the Playbook Now";
+    }
+
+    $("a, button").each(function () {
+        const text = $(this).text().trim();
+
+        if (text === "Request the Content Now") {
+            $(this).text(ctaText);
+        }
+    });
+
+    console.log("✅ CTA Updated:", ctaText);
+}
+
+
+
+
+
+
+
+
+
 
     // 4. Replace optional Marketo placeholders
     let output = $.html();
@@ -389,6 +451,57 @@ function getLanguageCodeFromMarketoUrl(marketoUrl) {
     }
 }
 
+function getLanguageCode(language, country, marketoUrl) {
+    const lang = String(language || "").trim().toLowerCase();
+    const ctry = String(country || "").trim().toLowerCase();
+
+    // Special language rules
+    if (lang === "english") return "en-gb";
+    if (lang === "arabic") return "ar-sa";
+
+
+if (lang === "french" && ctry === "cote-divoire") {
+    return "fr-fr";
+}
+
+        if (lang === "spanish") {
+        return ctry === "spain" ? "es-es" : "es-xl";
+    }
+
+    // Other languages: get LCID from Marketo URL
+    const lcid = getLanguageCodeFromMarketoUrl(marketoUrl);
+
+    if (!lcid) return "";
+
+    const code = lcid.trim().toLowerCase();
+
+    // If LCID already contains a region, preserve it in lowercase
+    if (code.includes("-")) {
+        return code;
+    }
+
+    // Handle single-code LCIDs
+    const singleCodeMap = {
+        pt: "pt-pt",
+        fr: "fr-fr",
+        fi: "fi-fi",
+        ja: "ja-jp",
+        no: "nb-no",
+        tr: "tr-tr",
+        de: "de-lu",
+        ru: "ru-ru",
+        da: "da-dk",
+        it:"it-it",
+        nl:"nl-nl",
+        pl:"pl-pl",
+        sv:"sv-se",
+        id:"id-id"
+    };
+
+    return singleCodeMap[code] || code;
+}
+
+
 
 
 
@@ -468,7 +581,8 @@ async function createAssetTemplate({
     country,
     language,
     marketoTitle,
-    marketoAbstract
+    marketoAbstract,
+    formHeading
 }) {
     const templateFolder = path.join(
         __dirname,
@@ -568,7 +682,8 @@ if (!(await fs.pathExists(sourceFile))) {
             content = injectMarketoIntoHtml(
                 content,
                 marketoTitle,
-                marketoAbstract
+                marketoAbstract,
+                formHeading
             );
         }
 
@@ -800,6 +915,12 @@ app.post("/generate", async (req, res) => {
         let failedCount = 0;
         const outputRows = [];
 
+
+
+
+
+        
+
         for (let i = 0; i < assets.length; i++) {
             const item = assets[i];
 
@@ -833,9 +954,11 @@ app.post("/generate", async (req, res) => {
                 continue;
             }
 
-            const countryFolder = sanitizeCountry(country);
-            const languageFolder = sanitizeLanguage(language);
-            const assetFolderName = sanitizeName(assetTitle);
+const normalizedCountry = normalizeCountry(country);
+
+const countryFolder = sanitizeCountry(normalizedCountry);
+const languageFolder = sanitizeLanguage(language);
+const assetFolderName = sanitizeName(assetTitle);
 
             const assetFolder = path.join(
                 OUTPUT_DIR,
@@ -891,8 +1014,10 @@ app.post("/generate", async (req, res) => {
                     country,
                     language,
                     marketoTitle: marketoContent.title,
-                    marketoAbstract: marketoContent.abstract
+                    marketoAbstract: marketoContent.abstract,
+                        formHeading: marketoContent.formHeading
                 });
+                console.log("🎯 Marketo Form Heading:", marketoContent.formHeading);
 
                 // 4. Extract Hub from generated index.html
                 const indexFilePath = path.join(
@@ -923,7 +1048,7 @@ app.post("/generate", async (req, res) => {
                 const outputRow = {
                     activatePage: generatedURL,
                     msftPage: marketoUrl,
-                    languageCode: getLanguageCodeFromMarketoUrl(marketoUrl),
+                  languageCode: getLanguageCode(language, country, marketoUrl),
                     lob: item.lob || "",
                     hub: hub || "",
                     asset: pdf

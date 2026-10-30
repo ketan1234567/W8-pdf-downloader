@@ -197,11 +197,22 @@ async function processLanguage(client, countryFolder, languageFolder) {
   //console.log(`Latest folder: ${latestAsset.name}`);
   console.log(`Remote folder: ${latestAsset.path}`);
 
+const startTime = Date.now();
+
   await downloadRequiredFiles(
     client,
     latestAsset.path,
     localAssetPath
   );
+
+  const endTime = Date.now();
+const durationMs = endTime - startTime;
+const durationSeconds = (durationMs / 1000).toFixed(2);
+
+console.log(`Saved to: ${localAssetPath}`);
+console.log(`⏱️ Download time: ${durationSeconds} seconds`);
+
+
 
   console.log(`Saved to: ${localAssetPath}`);
 }
